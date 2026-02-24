@@ -1,22 +1,18 @@
-# rl-robotics-isaac-sim-crwv
+# Running Nvidia Isaac Sim 
 
-# Initial Setup on CRWV Cluster
+# Initial Setup on Coreweave Cluster
 ### 1. Get Isaac Lab
-
 ```
 git clone https://github.com/isaac-sim/IsaacLab.git
 cd IsaacLab
 ```
-
 ### 2.  Accept EULAs so the container can run headless without prompts
 #### Isaac Sim/Omniverse require EULA acceptance in non-interactive runs.
-
 ```
 export OMNI_KIT_ACCEPT_EULA=YES
 export ACCEPT_EULA=Y
 export PRIVACY_CONSENT=Y
 ```
-
 ### 3. Create docker/cluster/.env.cluster
 
 ```
