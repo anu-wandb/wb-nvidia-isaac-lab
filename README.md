@@ -1,75 +1,172 @@
-# Running Nvidia Isaac Sim 
+# Running NVIDIA Isaac Lab for Reinforcement Learning on Kubernetes with Weights & Biases Tracking
 
-# Initial Setup on Coreweave Cluster
-### 1. Get Isaac Lab
-```
-git clone https://github.com/isaac-sim/IsaacLab.git
-cd IsaacLab
-```
-### 2.  Accept EULAs so the container can run headless without prompts
-#### Isaac Sim/Omniverse require EULA acceptance in non-interactive runs.
-```
-export OMNI_KIT_ACCEPT_EULA=YES
-export ACCEPT_EULA=Y
-export PRIVACY_CONSENT=Y
-```
-### 3. Create docker/cluster/.env.cluster
+This guide explains how to run distributed NVIDIA Isaac Lab training on
+a Kubernetes GPU cluster using the provided StatefulSet YAML
+configuration. We are using a L40 (2 nodes x 4 GPU cluster from Coreweave here, please update the hardware configs to match your cluster)
 
+This setup supports:
+
+-   Multi-node distributed training (2 nodes × 4 GPUs each)
+-   Headless Isaac Sim execution
+-   Automatic Weights & Biases (W&B) logging
+-   Artifact tracking
+-   Checkpoint and video upload after training
+-   Persistent shared storage for logs and models
+
+------------------------------------------------------------------------
+
+# Documentation References
+
+-   Isaac Lab GitHub\
+    https://github.com/isaac-sim/IsaacLab
+
+-   Isaac Sim Documentation\
+    https://docs.omniverse.nvidia.com/isaacsim/latest/index.html
+
+-   Weights & Biases Documentation\
+    https://docs.wandb.ai
+
+-   Kubernetes Documentation\
+    https://kubernetes.io/docs/home/
+
+-   NVIDIA NGC (Container Registry)\
+    https://ngc.nvidia.com
+
+------------------------------------------------------------------------
+
+# Architecture Overview
+
+The provided YAML deploys:
+
+-   A StatefulSet with 2 replicas\
+-   4 GPUs per pod\
+-   torch.distributed multi-node training\
+-   Headless Isaac Sim\
+-   A 400Gi PersistentVolumeClaim (ReadWriteMany)\
+-   Automatic W&B artifact download before training\
+-   Automatic checkpoint + video upload after training
+
+Training task:
+
+    Isaac-Dexsuite-Kuka-Allegro-Lift-v0
+
+    Other avaialble tasks and enviroments that ship with Isaac Sim: https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html
+
+------------------------------------------------------------------------
+
+# 1. Prerequisites
+
+## Select the Correct Kubernetes Context for your cluster
+
+``` bash
+kubectl config get-contexts
+kubectl config use-context <your-cluster-context>
 ```
-# Isaac Lab cluster interface 
-export CLUSTER_TYPE=slurm
-export CLUSTER_DEFAULT_PARTITION=h100
-# Where SIF will live and where to copy logs/checkpoints
-export CLUSTER_REMOTE_ROOT=/mnt/home/$USER/isaaclab_cluster
-export CLUSTER_LOGS_DIR=/mnt/home/$USER/isaaclab_logs
-# Build profile (the default "base" image is fine)
-export ISAACLAB_DOCKER_PROFILE=base
-# EULA (headless) acceptance for Isaac Sim containers
-export OMNI_KIT_ACCEPT_EULA=YES
-export ACCEPT_EULA=Y
-export PRIVACY_CONSENT=Y
+
+------------------------------------------------------------------------
+
+# 2. NVIDIA Container Registry (NGC) Setup
+
+Container image used:
+
+    nvcr.io/nvidia/isaac-lab:2.3.2
+
+Create an NGC account:
+
+https://ngc.nvidia.com
+
+Generate an NGC API key and create a Kubernetes image pull secret:
+
+``` bash
+kubectl create secret docker-registry nvcr-secret   --docker-server=nvcr.io   --docker-username='$oauthtoken'   --docker-password='<YOUR_NGC_API_KEY>'  
 ```
 
-### 4. Build & push the cluster image 
+If required, add to your pod spec:
 
-##### Will pull Isaac Sim image, build Isaac Lab layers, produce/push SIF for cluster usage
-##### Make sure to create an account with NGC and get an API key for NVIDIA Registry 
-
-```
-mkdir -p ~/.config/enroot
-cat > ~/.config/enroot/.credentials <<'EOF'
-machine nvcr.io login $oauthtoken password <YOUR_NGC_API_KEY>
-EOF
-chmod 600 ~/.config/enroot/.credentials
-```
-### 5. Set WANDB API Key
-
-```
-export WANDB_API_KEY="YOUR_WANDB_API_KEY"
+``` yaml
+imagePullSecrets:
+  - name: nvcr-secret
 ```
 
+------------------------------------------------------------------------
 
-## Optional: 
+# 3. Weights & Biases Setup
 
-### Watch Logs 
+Create a W&B account:
 
+https://wandb.ai
+
+Generate an API key:
+
+https://wandb.ai/authorize
+
+Store it as a Kubernetes secret:
+
+``` bash
+kubectl create secret generic wandb-api-key   --from-literal=WANDB_API_KEY=<YOUR_WANDB_API_KEY>
 ```
-squeue -u $USER
-tail -f /mnt/home/$USER/isaaclab_logs/rsl_rl/Isaac-Reach-Franka-v0/**/output.log  # adjust to your Hydra dir
-```
-### Post-train W&B video + reward breakdown:
 
-```
-srun -p h100 --gpus=1 --container-image="$ISAACLAB_SIF" \
-  --container-mounts="/mnt/home/$USER/isaaclab_logs:/mnt/home/$USER/isaaclab_logs" \
-  bash -lc "
-    cd /workspace/IsaacLab && \
-    python cw_run/eval_and_log_wandb.py \
-      --task Isaac-Reach-Franka-v0 \
-      --logdir /mnt/home/$USER/isaaclab_logs/rsl_rl/Isaac-Reach-Franka-v0 \
-      --ctrl_cost 1e-3 \
-      --episodes 2 --video_len 300 \
-      --project isaaclab-coreweave --run_name after-train
-  "
-  ```
+Referenced in YAML as:
 
+``` yaml
+- name: WANDB_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: wandb-api-key
+      key: WANDB_API_KEY
+```
+
+------------------------------------------------------------------------
+
+# 4. Running Training
+
+Apply your YAML:
+
+``` bash
+kubectl apply -f isaaclab-max.yaml
+```
+
+Check pods:
+
+``` bash
+kubectl get pods
+```
+
+View logs:
+
+``` bash
+kubectl logs -f isaaclab-max-workers-0
+kubectl logs -f isaaclab-max-workers-1
+```
+
+------------------------------------------------------------------------
+
+# 5. Cleanup
+
+Delete deployment:
+
+``` bash
+kubectl delete -f isaaclab-max.yaml
+```
+
+Delete PVC (optional):
+
+``` bash
+kubectl delete pvc isaaclab-max-logs-pvc
+```
+
+------------------------------------------------------------------------
+
+# Summary
+
+Workflow:
+
+1.  Select cluster context\
+2.  Ensure NGC secret exists\
+3.  Ensure W&B secret exists\
+4.  Apply YAML\
+5.  Monitor logs
+
+Training runs distributed across 8 GPUs. Artifacts download
+automatically. Checkpoints and videos upload automatically to Weights &
+Biases.
