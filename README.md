@@ -1,3 +1,12 @@
+<p align="center">
+  <img src="./assets/nvidia-isaac.webp" width="400" alt="Weights & Biases" />
+</p>
+
+<p align="center">
+  <img src="./assets/wandb_logo-dark.svg#gh-dark-mode-only" width="600" alt="Weights & Biases" />
+  <img src="./assets/wandb_logo-light.svg#gh-light-mode-only" width="600" alt="Weights & Biases" />
+</p>
+
 # Running NVIDIA Isaac Lab for Reinforcement Learning on Kubernetes with Weights & Biases Tracking
 
 This guide explains how to run distributed NVIDIA Isaac Lab training on
