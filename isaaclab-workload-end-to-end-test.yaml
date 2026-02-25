@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: isaaclab-launch
+  name: isaaclab-e2e-test-launch
 data:
   launch.sh: |
     #!/bin/bash
@@ -19,13 +19,13 @@ data:
     : "${MASTER_ADDR:=isaaclab-workers-0.isaaclab-workers}"
     : "${MASTER_PORT:=20000}"
     : "${NNODES:=2}"
-    : "${GPUS_PER_NODE:=2}"
+    : "${GPUS_PER_NODE:=1}"
     : "${NPROC_PER_NODE:=${GPUS_PER_NODE}}"
     : "${ISAAC_TASK:=Isaac-Dexsuite-Kuka-Allegro-Lift-v0}"
     if [[ -z "${RUN_TAG:-}" ]]; then
       export RUN_TAG="$(date -u +"%y%m-%H%M")"
     fi
-    export WANDB_NAME="${WANDB_NAME:-dexsuite-train-${RUN_TAG}}"
+    export WANDB_NAME="${WANDB_NAME:-dexsuite-e2e-test-${RUN_TAG}}"
     export WANDB_RUN_ID="${WANDB_RUN_ID:-${WANDB_NAME}}"
     export WANDB_DISABLE_GYM="${WANDB_DISABLE_GYM:-true}"
     export WANDB_GYM_DISABLE="${WANDB_GYM_DISABLE:-${WANDB_DISABLE_GYM}}"
@@ -87,7 +87,8 @@ data:
         --wandb-entity="${WANDB_ENTITY}" \
         --wandb-project-name="${WANDB_PROJECT}" \
         --wandb-name="${WANDB_NAME}" \
-        --max_iterations=10
+        --max_iterations=3 \
+        --num_envs=32
 
     ISAAC_LOG_ROOT="/workspace/isaaclab/logs" "$ISAAC_PY" - <<'PYCODE'
     import os
@@ -102,7 +103,7 @@ data:
     project = os.environ.get("WANDB_PROJECT", "isaaclab-wandb-crwv")
     run_name = os.environ.get(
         "WANDB_NAME",
-        f'isaaclab-job-{os.environ.get("NODE_RANK", "0")}-{int(time.time())}',
+        f'e2e-test-{os.environ.get("NODE_RANK", "0")}-{int(time.time())}',
     )
     run_id = os.environ.get("WANDB_RUN_ID") or run_name
 
@@ -150,7 +151,7 @@ data:
                 "id": run_id,
                 "name": run_name,
                 "resume": "allow",
-                "job_type": os.environ.get("WANDB_JOB_TYPE", "train"),
+                "job_type": os.environ.get("WANDB_JOB_TYPE", "e2e-test"),
             }
             run = wandb.init(**init_kwargs)
 
@@ -197,13 +198,13 @@ data:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: isaaclab-logs-pvc
+  name: isaaclab-e2e-test-logs-pvc
 spec:
   accessModes:
     - ReadWriteMany
   resources:
     requests:
-      storage: 200Gi
+      storage: 50Gi
 ---
 apiVersion: v1
 kind: Service
@@ -236,18 +237,18 @@ spec:
       volumes:
         - name: launch-script
           configMap:
-            name: isaaclab-launch
+            name: isaaclab-e2e-test-launch
             defaultMode: 0755
         - name: isaac-logs
           persistentVolumeClaim:
-            claimName: isaaclab-logs-pvc
+            claimName: isaaclab-e2e-test-logs-pvc
         - name: shm
           emptyDir:
             medium: Memory
             sizeLimit: 4Gi
       containers:
         - name: isaaclab
-          image: nvcr.io/nvidia/isaac-lab:2.3.0
+          image: nvcr.io/nvidia/isaac-lab:2.3.2
           command:
             - /bin/bash
             - /workspace/launch.sh
@@ -259,9 +260,9 @@ spec:
             - name: NNODES
               value: "2"
             - name: GPUS_PER_NODE
-              value: "2"
+              value: "1"
             - name: NPROC_PER_NODE
-              value: "2"
+              value: "1"
             - name: ISAAC_TASK
               value: Isaac-Dexsuite-Kuka-Allegro-Lift-v0
             - name: WANDB_ENTITY
@@ -307,10 +308,10 @@ spec:
               mountPath: /dev/shm
           resources:
             limits:
-              nvidia.com/gpu: 2
-              cpu: "16"
-              memory: 64Gi
-            requests:
-              nvidia.com/gpu: 2
+              nvidia.com/gpu: 1
               cpu: "8"
               memory: 32Gi
+            requests:
+              nvidia.com/gpu: 1
+              cpu: "4"
+              memory: 16Gi

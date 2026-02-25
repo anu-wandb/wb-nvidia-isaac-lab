@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: isaaclab-train-launch
+data:
+  launch.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    if [[ -z "${NODE_RANK:-}" ]]; then
+      if [[ -n "${POD_NAME:-}" ]]; then
+        export NODE_RANK="${POD_NAME##*-}"
+      else
+        export NODE_RANK="${HOSTNAME##*-}"
+      fi
+    fi
+    : "${NODE_RANK:?NODE_RANK is not set}"
+
+    : "${MASTER_ADDR:=isaaclab-workers-0.isaaclab-workers}"
+    : "${MASTER_PORT:=20000}"
+    : "${NNODES:=2}"
+    : "${GPUS_PER_NODE:=2}"
+    : "${NPROC_PER_NODE:=${GPUS_PER_NODE}}"
+    : "${ISAAC_TASK:=Isaac-Dexsuite-Kuka-Allegro-Lift-v0}"
+
+    cd /workspace/isaaclab
+
+    rm -f /dev/shm/sem.carbonite-sharedmemory || true
+    rm -rf /dev/shm/nccl-* /dev/shm/omni* || true
+
+    ./isaaclab.sh -p -m torch.distributed.run \
+      --nnodes="${NNODES}" \
+      --nproc_per_node="${NPROC_PER_NODE}" \
+      --node_rank="${NODE_RANK}" \
+      --rdzv_backend=c10d \
+      --rdzv_endpoint="${MASTER_ADDR}:${MASTER_PORT}" \
+      --rdzv_timeout=600 \
+      scripts/reinforcement_learning/rl_games/train.py \
+        --task="${ISAAC_TASK}" \
+        --headless \
+        --distributed \
+        --enable_cameras \
+        --max_iterations=10
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: isaaclab-train-logs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: isaaclab-workers
+spec:
+  clusterIP: None
+  selector:
+    app: isaaclab-workers
+  ports:
+    - name: rendezvous
+      port: 20000
+      targetPort: 20000
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: isaaclab-workers
+spec:
+  serviceName: isaaclab-workers
+  replicas: 2
+  selector:
+    matchLabels:
+      app: isaaclab-workers
+  template:
+    metadata:
+      labels:
+        app: isaaclab-workers
+    spec:
+      volumes:
+        - name: launch-script
+          configMap:
+            name: isaaclab-train-launch
+            defaultMode: 0755
+        - name: isaac-logs
+          persistentVolumeClaim:
+            claimName: isaaclab-train-logs-pvc
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 4Gi
+      containers:
+        - name: isaaclab
+          image: nvcr.io/nvidia/isaac-lab:2.3.2
+          command:
+            - /bin/bash
+            - /workspace/launch.sh
+          env:
+            - name: MASTER_ADDR
+              value: isaaclab-workers-0.isaaclab-workers
+            - name: MASTER_PORT
+              value: "20000"
+            - name: NNODES
+              value: "2"
+            - name: GPUS_PER_NODE
+              value: "2"
+            - name: NPROC_PER_NODE
+              value: "2"
+            - name: ISAAC_TASK
+              value: Isaac-Dexsuite-Kuka-Allegro-Lift-v0
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OMNI_KIT_ACCEPT_EULA
+              value: "YES"
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: PRIVACY_CONSENT
+              value: "Y"
+            - name: OMNI_KIT_DISABLE_PIP_INSTALL
+              value: "1"
+            - name: NCCL_ASYNC_ERROR_HANDLING
+              value: "1"
+            - name: TORCH_NCCL_ASYNC_ERROR_HANDLING
+              value: "1"
+            - name: NCCL_DEBUG
+              value: "WARN"
+          volumeMounts:
+            - name: launch-script
+              mountPath: /workspace/launch.sh
+              subPath: launch.sh
+            - name: isaac-logs
+              mountPath: /workspace/isaaclab/logs
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            limits:
+              nvidia.com/gpu: 2
+              cpu: "16"
+              memory: 64Gi
+            requests:
+              nvidia.com/gpu: 2
+              cpu: "8"
+              memory: 32Gi

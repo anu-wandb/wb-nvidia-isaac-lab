@@ -16,7 +16,7 @@ data:
     fi
     : "${NODE_RANK:?NODE_RANK is not set}"
 
-    : "${MASTER_ADDR:=isaaclab-max-workers-0.isaaclab-max-workers}"
+    : "${MASTER_ADDR:=isaaclab-workers-0.isaaclab-workers}"
     : "${MASTER_PORT:=20000}"
     : "${NNODES:=2}"
     : "${GPUS_PER_NODE:=4}"
@@ -46,33 +46,6 @@ data:
     "${ISAAC_PY}" -m pip install --no-cache-dir --no-deps -q "gymnasium==0.29.1"
     rm -f /dev/shm/sem.carbonite-sharedmemory || true
     rm -rf /dev/shm/nccl-* /dev/shm/omni* || true
-
-    export ARTIFACT_ROOT="/workspace/isaaclab/artifacts"
-    mkdir -p "${ARTIFACT_ROOT}"
-    "${ISAAC_PY}" - <<'PYCODE'
-    import os
-    import wandb
-
-    artifact_specs = [
-        "wandb-smle/isaaclab-wandb-crwv/ppo-policy:v0",
-        "wandb-smle/isaaclab-wandb-crwv/isaaclab-cleaned-dataset:v0",
-    ]
-    root = os.environ.get("ARTIFACT_ROOT", "/workspace/isaaclab/artifacts")
-    init_kwargs = {
-        "entity": os.environ.get("WANDB_ENTITY", "wandb-smle"),
-        "project": os.environ.get("WANDB_PROJECT", "isaaclab-wandb-crwv"),
-        "name": os.environ.get("WANDB_NAME"),
-        "id": os.environ.get("WANDB_RUN_ID"),
-        "resume": "allow",
-        "job_type": "artifact-setup",
-    }
-    run = wandb.init(**init_kwargs)
-    for spec in artifact_specs:
-        print(f"[artifact] downloading {spec} -> {root}")
-        art = run.use_artifact(spec)
-        art.download(root=root)
-    run.finish()
-    PYCODE
 
     "${ISAAC_PY}" - <<'PYCODE'
     import importlib
@@ -235,11 +208,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: isaaclab-max-workers
+  name: isaaclab-workers
 spec:
   clusterIP: None
   selector:
-    app: isaaclab-max-workers
+    app: isaaclab-workers
   ports:
     - name: rendezvous
       port: 20000
@@ -248,17 +221,17 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: isaaclab-max-workers
+  name: isaaclab-workers
 spec:
-  serviceName: isaaclab-max-workers
+  serviceName: isaaclab-workers
   replicas: 2
   selector:
     matchLabels:
-      app: isaaclab-max-workers
+      app: isaaclab-workers
   template:
     metadata:
       labels:
-        app: isaaclab-max-workers
+        app: isaaclab-workers
     spec:
       volumes:
         - name: launch-script
@@ -274,13 +247,13 @@ spec:
             sizeLimit: 16Gi
       containers:
         - name: isaaclab
-          image: nvcr.io/nvidia/isaac-lab:2.3.0
+          image: nvcr.io/nvidia/isaac-lab:2.3.2
           command:
             - /bin/bash
             - /workspace/launch.sh
           env:
             - name: MASTER_ADDR
-              value: isaaclab-max-workers-0.isaaclab-max-workers
+              value: isaaclab-workers-0.isaaclab-workers
             - name: MASTER_PORT
               value: "20000"
             - name: NNODES

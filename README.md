@@ -59,7 +59,7 @@ Training task:
 
     Isaac-Dexsuite-Kuka-Allegro-Lift-v0
 
-    Other avaialble tasks and enviroments that ship with Isaac Sim: https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html
+Other avaialble tasks and enviroments that ship with Isaac Sim: https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html
 
 ------------------------------------------------------------------------
 
@@ -129,11 +129,33 @@ Referenced in YAML as:
 
 # 4. Running Training
 
-Apply your YAML:
+Three workload configurations are available:
+
+### Training Only
+
+Runs distributed training with no W&B tracking or artifact uploads — useful for validating that training starts and runs correctly on your cluster.
 
 ``` bash
-kubectl apply -f isaaclab-max.yaml
+kubectl apply -f isaaclab-workload-only-train.yaml
 ```
+
+### End-to-End Test
+
+Runs the full pipeline (training, W&B tracking, checkpoint and video upload) at minimal scale (3 iterations, 32 envs, 1 GPU per node) as a smoke test.
+
+``` bash
+kubectl apply -f isaaclab-workload-end-to-end-test.yaml
+```
+
+### Full Training
+
+Runs the complete pipeline at full scale (4 GPUs/node, 1500 iterations, 8192 envs) with W&B tracking and artifact uploads.
+
+``` bash
+kubectl apply -f isaaclab-workload-max.yaml
+```
+
+### Monitoring
 
 Check pods:
 
@@ -144,9 +166,11 @@ kubectl get pods
 View logs:
 
 ``` bash
-kubectl logs -f isaaclab-max-workers-0
-kubectl logs -f isaaclab-max-workers-1
+kubectl logs -f isaaclab-workers-0
+kubectl logs -f isaaclab-workers-1
 ```
+
+Currently W&B logging is enabled from node rank 0 only. W&B also supports logging from all nodes if needed.
 
 ------------------------------------------------------------------------
 
@@ -155,27 +179,27 @@ kubectl logs -f isaaclab-max-workers-1
 Delete deployment:
 
 ``` bash
-kubectl delete -f isaaclab-max.yaml
+kubectl delete -f <your-workload-file>.yaml
 ```
 
 Delete PVC (optional):
 
 ``` bash
-kubectl delete pvc isaaclab-max-logs-pvc
+kubectl delete pvc isaaclab-logs-pvc
 ```
 
 ------------------------------------------------------------------------
 
-# Summary
+# Workflow Summary:
 
-Workflow:
-
-1.  Select cluster context\
-2.  Ensure NGC secret exists\
-3.  Ensure W&B secret exists\
-4.  Apply YAML\
+1.  Select cluster context
+2.  Ensure NGC secret exists
+3.  Ensure W&B secret exists
+4.  Apply YAML
 5.  Monitor logs
 
-Training runs distributed across 8 GPUs. Artifacts download
-automatically. Checkpoints and videos upload automatically to Weights &
+Training runs distributed across 8 GPUs. 
+Training is being tracked in Weights &
+Biases.
+Checkpoints and videos upload automatically to Weights &
 Biases.
