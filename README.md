@@ -22,6 +22,12 @@ This setup supports:
 -   Checkpoint and video upload after training
 -   Persistent shared storage for logs and models
 
+
+<p align="center">
+  <img src="./assets/W&B_Demo_gif.gif" alt="Weights & Biases" />
+</p>
+
+
 ------------------------------------------------------------------------
 
 # Documentation References
