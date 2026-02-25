@@ -27,24 +27,25 @@ This setup supports:
   <img src="./assets/W&B_Demo_gif.gif" alt="Weights & Biases" />
 </p>
 
+## See this blueprint running live on W&B: [Isaac Lab + W&B on Coreweave](https://wandb.ai/wandb-smle/isaaclab-wandb-crwv?nw=nwuseranushravvatsa)
 
 ------------------------------------------------------------------------
 
 # Documentation References
 
--   Isaac Lab GitHub\
+-   Isaac Lab GitHub
     https://github.com/isaac-sim/IsaacLab
 
--   Isaac Sim Documentation\
+-   Isaac Sim Documentation
     https://docs.omniverse.nvidia.com/isaacsim/latest/index.html
 
--   Weights & Biases Documentation\
+-   Weights & Biases Documentation
     https://docs.wandb.ai
 
--   Kubernetes Documentation\
+-   Kubernetes Documentation
     https://kubernetes.io/docs/home/
 
--   NVIDIA NGC (Container Registry)\
+-   NVIDIA NGC (Container Registry)
     https://ngc.nvidia.com
 
 ------------------------------------------------------------------------
@@ -53,12 +54,12 @@ This setup supports:
 
 The provided YAML deploys:
 
--   A StatefulSet with 2 replicas\
--   4 GPUs per pod\
--   torch.distributed multi-node training\
--   Headless Isaac Sim\
--   A 400Gi PersistentVolumeClaim (ReadWriteMany)\
--   Automatic W&B artifact download before training\
+-   A StatefulSet with 2 replicas
+-   4 GPUs per pod
+-   torch.distributed multi-node training
+-   Headless Isaac Sim
+-   A 400Gi PersistentVolumeClaim (ReadWriteMany)
+-   Automatic W&B artifact download before training
 -   Automatic checkpoint + video upload after training
 
 Training task:
