@@ -25,7 +25,7 @@ Access the GitHub Repo here:
 This blueprint demonstrates how robotics teams can scale reinforcement
 learning (RL) experiments in NVIDIA Isaac Lab across multiple GPUs and
 nodes, while unifying experiment tracking, artifact management, and
-simulation logging using Weights & Biases (W&B), the AI Developer
+simulation logging using [Weights & Biases (W&B)](https://wandb.ai/site/), the AI Developer
 platform.
 
 It provides a production-ready reference architecture for:
@@ -137,7 +137,7 @@ Simulation → Rollout Collection → Policy Update → Repeat
 
 ## 3. Experiment Tracking & Model Lifecycle (W&B)
 
-All training outputs stream to Weights & Biases (W&B) as the integrated
+All training outputs stream to [Weights & Biases (W&B)](https://wandb.ai/site/models/) as the integrated
 experiment tracking layer.
 
 W&B captures:
@@ -154,7 +154,7 @@ W&B captures:
 
 ## ML Workflow
 
-Training begins with massively parallel simulation inside Isaac Lab, where thousands of vectorized environments run per GPU. Isaac Sim executes headless, leveraging RTX rendering and GPU-accelerated physics to generate high-fidelity trajectories at scale.
+Training begins with massively parallel simulation inside [Isaac Lab](https://github.com/isaac-sim/IsaacLab), where thousands of vectorized environments run per GPU. [Isaac Sim](https://github.com/isaac-sim/IsaacSim) executes headless, leveraging RTX rendering and GPU-accelerated physics to generate high-fidelity trajectories at scale.
 
 These trajectories feed into a distributed RL optimizer using `torch.distributed`, synchronizing gradients across GPUs and nodes. Policies improve over hundreds or thousands of iterations as reward signals and system metrics evolve in real time.
 
@@ -174,19 +174,11 @@ Weights & Biases provides a unified experiment tracking layer for distributed RL
 
 Simulations are auto-synced to training steps, helping teams connect the metrics to rollouts with a single pane of glass.
 
-## Observability
-
 Training is monitored centrally through Weights & Biases Workspace, where metrics, system telemetry, simulation videos, and checkpoints are visualized in real time. Teams can define alerts on key signals such as reward thresholds, loss divergence, or system utilization to proactively monitor training health as workloads scale.
 
-Beyond live monitoring, W&B Reports (see example auto-generated report here) enable teams to create shareable, structured summaries of experiments, combining charts, rollout videos, configurations, and analysis in a single collaborative document. This makes it easy to review results, compare runs, communicate findings across teams, and maintain a durable record of research progress.
+Beyond live monitoring, W&B Reports ([see example auto-generated report here](https://github.com/anu-wandb/robotics_automation_demo/blob/main/scripts/generate_wandb_report.py)) enable teams to create shareable, structured summaries of experiments, combining charts, rollout videos, configurations, and analysis in a single collaborative document. This makes it easy to review results, compare runs, communicate findings across teams, and maintain a durable record of research progress.
 
 Together, dashboards, alerts, and reports provide continuous visibility from experiment execution to results dissemination.
-
-
-
-## Live Experiment Example
-
-[Isaac Lab + W&B on CoreWeave](https://wandb.ai/wandb-smle/isaaclab-wandb-crwv?nw=o1pb2dm0rfd)
 
 
 
