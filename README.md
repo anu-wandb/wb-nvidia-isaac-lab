@@ -25,7 +25,7 @@ This setup supports:
   <img src="./assets/W&B_Demo_gif.gif" alt="Weights & Biases" />
 </p>
 
-## See this blueprint running live on W&B: [Isaac Lab + W&B on Coreweave](https://wandb.ai/wandb-smle/isaaclab-wandb-crwv?nw=nwuseranushravvatsa)
+## See this blueprint running live on W&B: [Isaac Lab + W&B on Coreweave](https://wandb.ai/wandb-smle/isaaclab-wandb-crwv?nw=o1pb2dm0rfd)
 
 ------------------------------------------------------------------------
 
