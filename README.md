@@ -110,11 +110,13 @@ Create a W&B account: https://wandb.ai
 
 Generate an API key: https://wandb.ai/authorize
 
-Store your API key and entity (your W&B team name) as a Kubernetes secret:
+Store your API key and entity (your W&B team name) as Kubernetes secrets:
 
 ``` bash
 kubectl create secret generic wandb-api-key \
-  --from-literal=WANDB_API_KEY=<YOUR_WANDB_API_KEY> \
+  --from-literal=WANDB_API_KEY=<YOUR_WANDB_API_KEY>
+
+kubectl create secret generic wandb-entity \
   --from-literal=WANDB_ENTITY=<YOUR_WANDB_TEAM_NAME>
 ```
 
@@ -129,7 +131,7 @@ Referenced in YAML as:
 - name: WANDB_ENTITY
   valueFrom:
     secretKeyRef:
-      name: wandb-api-key
+      name: wandb-entity
       key: WANDB_ENTITY
 ```
 

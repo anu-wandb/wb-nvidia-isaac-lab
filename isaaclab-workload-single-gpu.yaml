@@ -219,6 +219,11 @@ spec:
               value: Isaac-Dexsuite-Kuka-Allegro-Lift-v0
             - name: WANDB_PROJECT
               value: isaaclab-wandb-crwv
+            - name: WANDB_ENTITY
+              valueFrom:
+                secretKeyRef:
+                  name: wandb-entity
+                  key: WANDB_ENTITY
             - name: WANDB_API_KEY
               valueFrom:
                 secretKeyRef:
