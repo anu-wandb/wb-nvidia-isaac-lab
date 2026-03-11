@@ -63,7 +63,6 @@ data:
         --enable_cameras \
         --video \
         --track \
-        --wandb-entity="${WANDB_ENTITY}" \
         --wandb-project-name="${WANDB_PROJECT}" \
         --wandb-name="${WANDB_NAME}" \
         --max_iterations=1500 \
@@ -78,7 +77,6 @@ data:
     import wandb
 
     root = pathlib.Path(os.environ.get("ISAAC_LOG_ROOT", "/workspace/isaaclab/logs"))
-    entity = os.environ.get("WANDB_ENTITY", "wandb-smle")
     project = os.environ.get("WANDB_PROJECT", "isaaclab-wandb-crwv")
     run_name = os.environ.get(
         "WANDB_NAME",
@@ -125,7 +123,6 @@ data:
             print("[W&B upload] nothing to upload (no checkpoints/models or videos found)")
         else:
             init_kwargs = {
-                "entity": entity,
                 "project": project,
                 "id": run_id,
                 "name": run_name,
@@ -220,8 +217,6 @@ spec:
           env:
             - name: ISAAC_TASK
               value: Isaac-Dexsuite-Kuka-Allegro-Lift-v0
-            - name: WANDB_ENTITY
-              value: wandb-smle
             - name: WANDB_PROJECT
               value: isaaclab-wandb-crwv
             - name: WANDB_API_KEY
