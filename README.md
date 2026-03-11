@@ -41,7 +41,7 @@ This setup supports:
     https://docs.wandb.ai
 
 -   Kubernetes Documentation
-    https://kubernetes.io/docs/home/
+    https://kubernetes.io/docs/home
 
 -   NVIDIA NGC (Container Registry)
     https://ngc.nvidia.com
@@ -106,18 +106,16 @@ imagePullSecrets:
 
 # 3. Weights & Biases Setup
 
-Create a W&B account:
+Create a W&B account: https://wandb.ai
 
-https://wandb.ai
+Generate an API key: https://wandb.ai/authorize
 
-Generate an API key:
-
-https://wandb.ai/authorize
-
-Store it as a Kubernetes secret:
+Store your API key and entity (your W&B team name) as a Kubernetes secret:
 
 ``` bash
-kubectl create secret generic wandb-api-key   --from-literal=WANDB_API_KEY=<YOUR_WANDB_API_KEY>
+kubectl create secret generic wandb-api-key \
+  --from-literal=WANDB_API_KEY=<YOUR_WANDB_API_KEY> \
+  --from-literal=WANDB_ENTITY=<YOUR_WANDB_TEAM_NAME>
 ```
 
 Referenced in YAML as:
@@ -128,6 +126,11 @@ Referenced in YAML as:
     secretKeyRef:
       name: wandb-api-key
       key: WANDB_API_KEY
+- name: WANDB_ENTITY
+  valueFrom:
+    secretKeyRef:
+      name: wandb-api-key
+      key: WANDB_ENTITY
 ```
 
 ------------------------------------------------------------------------

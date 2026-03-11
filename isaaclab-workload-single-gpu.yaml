@@ -66,7 +66,7 @@ data:
         --wandb-project-name="${WANDB_PROJECT}" \
         --wandb-name="${WANDB_NAME}" \
         --max_iterations=1500 \
-        --num_envs=8192
+        --num_envs=1024
 
     ISAAC_LOG_ROOT="/workspace/isaaclab/logs" "${ISAAC_PY}" - <<'PYCODE'
     import os
